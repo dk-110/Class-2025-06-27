@@ -1,0 +1,57 @@
+---
+title: "Race and Income"
+execute: 
+  echo: false
+---
+```{r}
+#| message: false
+#| warning: false
+
+# Load libraries
+library(tidyverse)
+library(plotly)
+library(scales)
+
+# Load data
+nyc <- read_csv("https://raw.githubusercontent.com/PPBDS/primer.data/master/data-raw/nyc_tracts.csv")
+
+# Extract borough name from 'tract'
+nyc <- nyc %>%
+  mutate(
+    borough = case_when(
+      str_detect(tract, "Queens County") ~ "Queens",
+      str_detect(tract, "New York County") ~ "Manhattan",
+      str_detect(tract, "Kings County") ~ "Brooklyn",
+      str_detect(tract, "Bronx County") ~ "Bronx",
+      str_detect(tract, "Richmond County") ~ "Staten Island",
+      TRUE ~ "Other"
+    )
+  ) %>%
+  filter(borough != "Other") %>%    # keep only known boroughs
+  filter(!is.na(med_income))        # remove rows without income
+
+
+# Now plot race vs median income, faceted by borough
+p <- ggplot(nyc, aes(
+  x = med_income,
+  y = race,
+  color = med_income,
+  text = paste0("Borough: ", borough, "<br>Race: ", race, "<br>Income: $", med_income)
+)) +
+  geom_point(alpha = 0.5, size = 1.5) + scale_x_continuous(labels = scales::dollar_format()) +
+  scale_color_viridis_c() +
+  facet_wrap(~ borough, ncol = 1) +
+  labs(
+    title = "Race and Income Across Census Tracts in NYC Boroughs",
+    x = "Median Household Income",
+    y = "Race",
+    color = "Income"
+  ) +
+  theme_minimal()
+
+
+# Interactive plot
+ggplotly(p, tooltip = "text")
+```
+
+This interactive plot visualizes the relationship between race and median household income across different boroughs of New York City using census tract-level data. Each dot represents a single census tract, positioned according to its reported median income (on the x-axis) and the dominant racial group within that tract (on the y-axis). The plot is faceted by borough, allowing for a side-by-side comparison of demographic and economic distributions within Manhattan, Brooklyn, Queens, the Bronx, and Staten Island. Color gradients correspond to income levels, helping to reveal patterns of income inequality along racial lines. This visualization provides an accessible way to explore socioeconomic disparities and the spatial clustering of race and income across NYC.
